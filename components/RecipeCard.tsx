@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Clock, Users, Star } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { Heart, MessageCircle, Share2, Bookmark, MoreHorizontal, Clock, Users, Star, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 
 interface RecipeCardProps {
   id: string;
+  slug: string;
   title: string;
   description: string | null;
   thumbnail_url: string | null;
@@ -26,6 +28,7 @@ interface RecipeCardProps {
   isLiked: boolean;
   isSaved: boolean;
   userId: string | null;
+  authorId: string;
 }
 
 function timeAgo(iso: string) {
@@ -38,9 +41,9 @@ function timeAgo(iso: string) {
 }
 
 export default function RecipeCard({
-  id, title, description, thumbnail_url, difficulty,
+  id, slug, title, description, thumbnail_url, difficulty,
   prep_time_minutes, serves, rating, likes_count, comments_count, saves_count,
-  created_at, authorName, authorHandle, authorAvatar, tags, isLiked, isSaved, userId,
+  created_at, authorName, authorHandle, authorAvatar, tags, isLiked, isSaved, userId, authorId,
 }: RecipeCardProps) {
   const [liked, setLiked] = useState(isLiked);
   const [saved, setSaved] = useState(isSaved);
@@ -48,11 +51,45 @@ export default function RecipeCard({
   const [saves, setSaves] = useState(saves_count);
   const [likeLoading, setLikeLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isMock = id.startsWith("mock-");
+  const isOwner = !!userId && userId === authorId;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [menuOpen]);
+
+  async function handleDelete() {
+    if (!userId || deleting) return;
+    setDeleting(true);
+    setMenuOpen(false);
+    const supabase = createClient();
+    await supabase.from("recipes").delete().eq("id", id);
+    setDeleted(true);
+  }
+
+  if (deleted) return null;
 
   async function handleLike() {
-    if (!userId || isMock || likeLoading) return;
+    if (likeLoading) return;
+    if (isMock) {
+      setLiked((v) => !v);
+      setLikes((n) => liked ? Math.max(0, n - 1) : n + 1);
+      return;
+    }
+    if (!userId) return;
     setLikeLoading(true);
     const supabase = createClient();
     if (liked) {
@@ -70,7 +107,13 @@ export default function RecipeCard({
   }
 
   async function handleSave() {
-    if (!userId || isMock || saveLoading) return;
+    if (saveLoading) return;
+    if (isMock) {
+      setSaved((v) => !v);
+      setSaves((n) => saved ? Math.max(0, n - 1) : n + 1);
+      return;
+    }
+    if (!userId) return;
     setSaveLoading(true);
     const supabase = createClient();
     if (saved) {
@@ -100,23 +143,51 @@ export default function RecipeCard({
             <p className="text-xs text-muted-foreground">{authorHandle} · {timeAgo(created_at)}</p>
           </div>
         </div>
-        <button className="text-muted-foreground hover:text-foreground transition-colors p-1">
-          <MoreHorizontal size={18} />
-        </button>
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-md hover:bg-accent"
+          >
+            <MoreHorizontal size={18} />
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 top-8 z-20 bg-white border border-border rounded-xl shadow-lg py-1 min-w-[140px]">
+              {isOwner && (
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-destructive hover:bg-destructive/5 transition-colors disabled:opacity-50"
+                >
+                  <Trash2 size={15} />
+                  {deleting ? "Deleting…" : "Delete Post"}
+                </button>
+              )}
+              {!isOwner && (
+                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:bg-accent transition-colors">
+                  Report
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
-      {thumbnail_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={thumbnail_url} alt={title} className="w-full h-52 object-cover" />
-      ) : (
-        <div className="w-full h-52 bg-gradient-to-br from-[oklch(0.88_0.06_145)] to-[oklch(0.75_0.09_145)] flex items-center justify-center">
-          <span className="text-5xl">🍽️</span>
-        </div>
-      )}
+      <Link href={`/recipe/${slug}`}>
+        {thumbnail_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={thumbnail_url} alt={title} className="w-full h-52 object-cover hover:opacity-95 transition-opacity" />
+        ) : (
+          <div className="w-full h-52 bg-gradient-to-br from-[oklch(0.88_0.06_145)] to-[oklch(0.75_0.09_145)] flex items-center justify-center">
+            <span className="text-5xl">🍽️</span>
+          </div>
+        )}
+      </Link>
 
       <div className="px-4 py-3">
         <div className="flex items-start justify-between gap-2">
-          <h2 className="font-semibold text-foreground text-base leading-snug">{title}</h2>
+          <Link href={`/recipe/${slug}`}>
+            <h2 className="font-semibold text-foreground text-base leading-snug hover:text-primary transition-colors">{title}</h2>
+          </Link>
           {difficulty && (
             <Badge variant="secondary" className="shrink-0 text-[10px] bg-accent text-accent-foreground border-0">{difficulty}</Badge>
           )}
@@ -142,7 +213,7 @@ export default function RecipeCard({
         <div className="flex items-center gap-4">
           <button
             onClick={handleLike}
-            disabled={!userId || isMock}
+            disabled={!isMock && !userId}
             className={`flex items-center gap-1.5 text-sm transition-colors disabled:opacity-50 ${
               liked ? "text-rose-500" : "text-muted-foreground hover:text-rose-500"
             }`}
@@ -150,7 +221,10 @@ export default function RecipeCard({
             <Heart size={18} className={liked ? "fill-rose-500" : ""} />
             <span>{likes}</span>
           </button>
-          <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
+          <button
+            onClick={() => setCommentsOpen((v) => !v)}
+            className={`flex items-center gap-1.5 text-sm transition-colors ${commentsOpen ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+          >
             <MessageCircle size={18} /><span>{comments_count}</span>
           </button>
           <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
@@ -159,7 +233,7 @@ export default function RecipeCard({
         </div>
         <button
           onClick={handleSave}
-          disabled={!userId || isMock}
+          disabled={!isMock && !userId}
           className={`flex items-center gap-1.5 text-sm transition-colors disabled:opacity-50 ${
             saved ? "text-primary" : "text-muted-foreground hover:text-primary"
           }`}
@@ -168,6 +242,12 @@ export default function RecipeCard({
           <span>{saves}</span>
         </button>
       </div>
+
+      {commentsOpen && (
+        <div className="px-4 pb-4 border-t border-border pt-3">
+          <p className="text-xs text-muted-foreground text-center py-2">Comments coming soon</p>
+        </div>
+      )}
     </article>
   );
 }

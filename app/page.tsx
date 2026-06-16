@@ -4,57 +4,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import RecipeCard from "@/components/RecipeCard";
 
-// Fallback mock feed shown when the DB has no published recipes yet (demo mode)
-const mockRecipes = [
-  {
-    id: "mock-1",
-    title: "Mediterranean Chicken with Sun-Dried Tomatoes",
-    description: "A nutritious and colorful bowl packed with Mediterranean flavors, perfect for meal prep or a quick dinner.",
-    thumbnail_url: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=480&fit=crop",
-    difficulty: "Easy",
-    prep_time_minutes: 25,
-    serves: 4,
-    rating: 4.8,
-    likes_count: 342,
-    comments_count: 44,
-    saves_count: 128,
-    profiles: { full_name: "Sarah Chen", username: "sarahcooks", avatar_url: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=64&h=64&fit=crop&crop=face" },
-    recipe_tags: [{ tag: "Mediterranean" }, { tag: "Chicken" }, { tag: "Healthy" }],
-    created_at: new Date(Date.now() - 2 * 3600000).toISOString(),
-  },
-  {
-    id: "mock-2",
-    title: "Authentic Homemade Gnocchi",
-    description: "Light, pillowy gnocchi made from scratch — just potatoes, flour, and love. Serve with your favorite sauce.",
-    thumbnail_url: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=800&h=480&fit=crop",
-    difficulty: "Medium",
-    prep_time_minutes: 40,
-    serves: 6,
-    rating: 4.9,
-    likes_count: 891,
-    comments_count: 112,
-    saves_count: 445,
-    profiles: { full_name: "Marcus Rivera", username: "marcuseats", avatar_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=64&h=64&fit=crop&crop=face" },
-    recipe_tags: [{ tag: "Italian" }, { tag: "Pasta" }, { tag: "Vegetarian" }],
-    created_at: new Date(Date.now() - 5 * 3600000).toISOString(),
-  },
-  {
-    id: "mock-3",
-    title: "Vegan Buddha Bowl with Tahini Dressing",
-    description: "A rainbow of roasted veggies, crispy chickpeas, and creamy tahini — nourishing and absolutely stunning.",
-    thumbnail_url: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&h=480&fit=crop",
-    difficulty: "Easy",
-    prep_time_minutes: 30,
-    serves: 2,
-    rating: 4.7,
-    likes_count: 567,
-    comments_count: 78,
-    saves_count: 312,
-    profiles: { full_name: "Aisha Patel", username: "aishaplate", avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=64&h=64&fit=crop&crop=face" },
-    recipe_tags: [{ tag: "Vegan" }, { tag: "Bowl" }, { tag: "Gluten-Free" }],
-    created_at: new Date(Date.now() - 24 * 3600000).toISOString(),
-  },
-];
 
 const suggestedCreators = [
   { name: "James Wok", handle: "@jameswok", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop&crop=face", recipes: 127 },
@@ -67,14 +16,14 @@ export default async function HomePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  const [{ data: dbRecipes }, { data: likedIds }, { data: savedIds }] = await Promise.all([
+  const [{ data: dbRecipes, error: recipesError }, { data: likedIds }, { data: savedIds }] = await Promise.all([
     supabase
       .from("recipes")
       .select(`
-        id, title, description, thumbnail_url, difficulty,
+        id, slug, author_id, title, description, thumbnail_url, difficulty,
         prep_time_minutes, serves, rating, likes_count, comments_count, saves_count,
         created_at,
-        profiles(full_name, username, avatar_url),
+        profiles!recipes_author_id_fkey(full_name, username, avatar_url),
         recipe_tags(tag)
       `)
       .eq("is_published", true)
@@ -88,10 +37,11 @@ export default async function HomePage() {
       : Promise.resolve({ data: [] }),
   ]);
 
+  if (recipesError) console.error("[HomePage] recipes query error:", recipesError);
   const likedSet = new Set((likedIds ?? []).map((r: { recipe_id: string }) => r.recipe_id));
   const savedSet = new Set((savedIds ?? []).map((r: { recipe_id: string }) => r.recipe_id));
 
-  const feed = (dbRecipes && dbRecipes.length > 0 ? dbRecipes : mockRecipes) as typeof mockRecipes;
+  const feed = (dbRecipes ?? []) as NonNullable<typeof dbRecipes>;
 
   return (
     <div className="flex min-h-full">
@@ -116,7 +66,7 @@ export default async function HomePage() {
             <Sparkles size={16} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-[oklch(0.28_0.09_145)]">AI Picks for You</p>
+            <p className="text-sm font-semibold text-[oklch(0.28_0.09_145)]">Picks for You</p>
             <p className="text-xs text-[oklch(0.42_0.07_145)] mt-0.5">Based on your love of Italian cuisine — 3 new recipes today</p>
           </div>
           <Link href="/discover" className="ml-auto text-xs font-semibold text-[oklch(0.38_0.11_145)] hover:underline shrink-0">
@@ -125,6 +75,16 @@ export default async function HomePage() {
         </div>
 
         <div className="space-y-6">
+          {feed.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="text-5xl mb-4">🍽️</div>
+              <h3 className="font-semibold text-foreground mb-1">No recipes yet</h3>
+              <p className="text-sm text-muted-foreground mb-5 max-w-xs">Be the first to share a recipe with the MyPlattr community.</p>
+              <Link href="/create-recipe" className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">
+                <Plus size={15} /> Create Recipe
+              </Link>
+            </div>
+          )}
           {feed.map((r) => {
             const profile = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
             const tags = r.recipe_tags?.map((t: { tag: string }) => t.tag) ?? [];
@@ -133,6 +93,7 @@ export default async function HomePage() {
               <RecipeCard
                 key={r.id}
                 id={r.id}
+                slug={r.slug ?? r.id}
                 title={r.title}
                 description={r.description}
                 thumbnail_url={r.thumbnail_url}
@@ -151,6 +112,7 @@ export default async function HomePage() {
                 isLiked={likedSet.has(r.id)}
                 isSaved={savedSet.has(r.id)}
                 userId={user?.id ?? null}
+                authorId={r.author_id}
               />
             );
           })}
@@ -160,7 +122,7 @@ export default async function HomePage() {
       {/* Right Panel */}
       <div className="w-72 shrink-0 px-4 py-6 hidden xl:block">
         <div className="bg-white dark:bg-[oklch(0.17_0.010_145)] rounded-2xl border border-border p-4 mb-4">
-          <h3 className="font-semibold text-sm text-foreground mb-3">Suggested Creators</h3>
+          <h3 className="font-semibold text-sm text-foreground mb-3">Suggested</h3>
           <div className="space-y-3">
             {suggestedCreators.map((c) => (
               <div key={c.handle} className="flex items-center justify-between">

@@ -42,10 +42,11 @@ export interface Database {
           saves_count: number;
           comments_count: number;
           rating: number;
+          slug: string | null;
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["recipes"]["Row"], "id" | "created_at" | "updated_at" | "likes_count" | "saves_count" | "comments_count" | "rating">;
+        Insert: Omit<Database["public"]["Tables"]["recipes"]["Row"], "id" | "created_at" | "updated_at" | "likes_count" | "saves_count" | "comments_count" | "rating" | "slug">;
         Update: Partial<Database["public"]["Tables"]["recipes"]["Insert"]>;
       };
       ingredients: {
@@ -81,9 +82,19 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["recipe_saves"]["Row"], "created_at">;
         Update: never;
       };
+      recipe_tags: {
+        Row: { recipe_id: string; tag: string };
+        Insert: { recipe_id: string; tag: string };
+        Update: never;
+      };
       recipe_comments: {
         Row: { id: string; recipe_id: string; user_id: string; content: string; created_at: string };
         Insert: Omit<Database["public"]["Tables"]["recipe_comments"]["Row"], "id" | "created_at">;
+        Update: never;
+      };
+      community_members: {
+        Row: { community_id: string; user_id: string; joined_at: string };
+        Insert: Omit<Database["public"]["Tables"]["community_members"]["Row"], "joined_at">;
         Update: never;
       };
       communities: {

@@ -4,6 +4,7 @@ import { MapPin, Globe, Calendar, Settings, Share2, BadgeCheck, Plus } from "luc
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
+import EditProfileModal from "./EditProfileModal";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -23,7 +24,7 @@ export default async function ProfilePage() {
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", user.id),
     supabase
       .from("recipes")
-      .select("id, title, thumbnail_url, likes_count, difficulty")
+      .select("id, slug, title, thumbnail_url, likes_count, difficulty")
       .eq("author_id", user.id)
       .order("created_at", { ascending: false })
       .limit(12),
@@ -79,9 +80,10 @@ export default async function ProfilePage() {
             <button className="flex items-center gap-1.5 border border-border text-sm font-medium text-foreground px-3 py-1.5 rounded-lg hover:bg-accent transition-colors">
               <Share2 size={14} />
             </button>
-            <button className="flex items-center gap-1.5 border border-border text-sm font-medium text-foreground px-3 py-1.5 rounded-lg hover:bg-accent transition-colors">
-              <Settings size={14} /> Edit Profile
-            </button>
+            <EditProfileModal
+              profile={{ full_name: profile?.full_name ?? null, username, bio: profile?.bio ?? null, location: profile?.location ?? null, website: profile?.website ?? null }}
+              userId={user.id}
+            />
           </div>
         </div>
 
@@ -143,8 +145,9 @@ export default async function ProfilePage() {
             {recipes && recipes.length > 0 ? (
               <div className="grid grid-cols-3 gap-4">
                 {recipes.map((r) => (
-                  <div
+                  <Link
                     key={r.id}
+                    href={`/recipe/${r.slug ?? r.id}`}
                     className="aspect-square rounded-xl overflow-hidden border border-border hover:shadow-md transition-shadow cursor-pointer relative group bg-muted"
                   >
                     {r.thumbnail_url ? (
@@ -164,7 +167,7 @@ export default async function ProfilePage() {
                         <p className="text-white text-xs font-semibold line-clamp-2">{r.title}</p>
                       </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
