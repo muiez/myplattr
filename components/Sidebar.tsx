@@ -128,33 +128,37 @@ export default function Sidebar() {
         "pb-4 pt-3 border-t border-gray-100 dark:border-[oklch(0.25_0.012_145)] space-y-0.5",
         collapsed ? "px-2" : "px-3"
       )}>
-        {/* Notifications */}
-        <button
-          title="Notifications"
-          className={cn(
-            "flex items-center rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors w-full py-2.5",
-            collapsed ? "justify-center px-0" : "gap-3 px-3"
-          )}
-        >
-          <Bell size={17} strokeWidth={1.8} className="shrink-0" />
-          {!collapsed && <span className="whitespace-nowrap">Notifications</span>}
-        </button>
+        {/* Notifications — signed-in only */}
+        {user && (
+          <button
+            title="Notifications"
+            className={cn(
+              "flex items-center rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors w-full py-2.5",
+              collapsed ? "justify-center px-0" : "gap-3 px-3"
+            )}
+          >
+            <Bell size={17} strokeWidth={1.8} className="shrink-0" />
+            {!collapsed && <span className="whitespace-nowrap">Notifications</span>}
+          </button>
+        )}
 
-        {/* Settings — with inline personalization sub-menu */}
-        <button
-          title="Settings"
-          onClick={() => !collapsed && setShowSettings((s) => !s)}
-          className={cn(
-            "flex items-center rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors w-full py-2.5",
-            collapsed ? "justify-center px-0" : "gap-3 px-3"
-          )}
-        >
-          <Settings size={17} strokeWidth={1.8} className="shrink-0" />
-          {!collapsed && <span className="whitespace-nowrap flex-1 text-left">Settings</span>}
-        </button>
+        {/* Settings — signed-in only */}
+        {user && (
+          <button
+            title="Settings"
+            onClick={() => !collapsed && setShowSettings((s) => !s)}
+            className={cn(
+              "flex items-center rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors w-full py-2.5",
+              collapsed ? "justify-center px-0" : "gap-3 px-3"
+            )}
+          >
+            <Settings size={17} strokeWidth={1.8} className="shrink-0" />
+            {!collapsed && <span className="whitespace-nowrap flex-1 text-left">Settings</span>}
+          </button>
+        )}
 
         {/* Personalization sub-row (dark mode toggle) */}
-        {showSettings && !collapsed && mounted && (
+        {user && showSettings && !collapsed && mounted && (
           <button
             onClick={() => setTheme(isDark ? "light" : "dark")}
             className="flex items-center gap-3 pl-9 pr-3 py-2 rounded-lg text-xs font-medium text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-700 dark:hover:text-gray-300 transition-colors w-full"
