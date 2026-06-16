@@ -3,6 +3,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import RecipeCard from "@/components/RecipeCard";
+import type { Recipe } from "@/lib/supabase/types";
+
+type FeedRecipe = Recipe & {
+  author_id: string;
+  profiles: { full_name: string | null; username: string | null; avatar_url: string | null } | null;
+  recipe_tags: { tag: string }[];
+};
 
 
 const suggestedCreators = [
@@ -41,7 +48,7 @@ export default async function HomePage() {
   const likedSet = new Set((likedIds ?? []).map((r: { recipe_id: string }) => r.recipe_id));
   const savedSet = new Set((savedIds ?? []).map((r: { recipe_id: string }) => r.recipe_id));
 
-  const feed = (dbRecipes ?? []) as NonNullable<typeof dbRecipes>;
+  const feed = (dbRecipes ?? []) as unknown as FeedRecipe[];
 
   return (
     <div className="flex min-h-full">

@@ -20,8 +20,35 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["profiles"]["Row"], "created_at" | "updated_at">;
-        Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
+        Insert: {
+          id: string;
+          username?: string;
+          full_name?: string | null;
+          bio?: string | null;
+          avatar_url?: string | null;
+          cover_url?: string | null;
+          location?: string | null;
+          website?: string | null;
+          xp_points?: number;
+          streak?: number;
+          is_verified?: boolean;
+          plan?: string;
+        };
+        Update: {
+          id?: string;
+          username?: string;
+          full_name?: string | null;
+          bio?: string | null;
+          avatar_url?: string | null;
+          cover_url?: string | null;
+          location?: string | null;
+          website?: string | null;
+          xp_points?: number;
+          streak?: number;
+          is_verified?: boolean;
+          plan?: string;
+        };
+        Relationships: [];
       };
       recipes: {
         Row: {
@@ -46,8 +73,47 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["recipes"]["Row"], "id" | "created_at" | "updated_at" | "likes_count" | "saves_count" | "comments_count" | "rating" | "slug">;
-        Update: Partial<Database["public"]["Tables"]["recipes"]["Insert"]>;
+        Insert: {
+          author_id: string;
+          title: string;
+          description?: string | null;
+          category?: string | null;
+          cuisine_type?: string | null;
+          prep_time_minutes?: number | null;
+          serves?: number | null;
+          difficulty?: "Easy" | "Medium" | "Advanced" | null;
+          is_published?: boolean;
+          is_ai_generated?: boolean;
+          thumbnail_url?: string | null;
+          video_url?: string | null;
+        };
+        Update: {
+          author_id?: string;
+          title?: string;
+          description?: string | null;
+          category?: string | null;
+          cuisine_type?: string | null;
+          prep_time_minutes?: number | null;
+          serves?: number | null;
+          difficulty?: "Easy" | "Medium" | "Advanced" | null;
+          is_published?: boolean;
+          is_ai_generated?: boolean;
+          thumbnail_url?: string | null;
+          video_url?: string | null;
+          likes_count?: number;
+          saves_count?: number;
+          comments_count?: number;
+          rating?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recipes_author_id_fkey";
+            columns: ["author_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          }
+        ];
       };
       ingredients: {
         Row: {
@@ -59,8 +125,23 @@ export interface Database {
           notes: string | null;
           sort_order: number;
         };
-        Insert: Omit<Database["public"]["Tables"]["ingredients"]["Row"], "id">;
-        Update: Partial<Database["public"]["Tables"]["ingredients"]["Insert"]>;
+        Insert: {
+          recipe_id: string;
+          name: string;
+          amount?: string | null;
+          unit?: string | null;
+          notes?: string | null;
+          sort_order?: number;
+        };
+        Update: {
+          recipe_id?: string;
+          name?: string;
+          amount?: string | null;
+          unit?: string | null;
+          notes?: string | null;
+          sort_order?: number;
+        };
+        Relationships: [];
       };
       instructions: {
         Row: {
@@ -69,33 +150,47 @@ export interface Database {
           step_number: number;
           text: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["instructions"]["Row"], "id">;
-        Update: Partial<Database["public"]["Tables"]["instructions"]["Insert"]>;
+        Insert: {
+          recipe_id: string;
+          step_number: number;
+          text: string;
+        };
+        Update: {
+          recipe_id?: string;
+          step_number?: number;
+          text?: string;
+        };
+        Relationships: [];
       };
       recipe_likes: {
         Row: { recipe_id: string; user_id: string; created_at: string };
-        Insert: Omit<Database["public"]["Tables"]["recipe_likes"]["Row"], "created_at">;
-        Update: never;
+        Insert: { recipe_id: string; user_id: string };
+        Update: Record<string, never>;
+        Relationships: [];
       };
       recipe_saves: {
         Row: { recipe_id: string; user_id: string; created_at: string };
-        Insert: Omit<Database["public"]["Tables"]["recipe_saves"]["Row"], "created_at">;
-        Update: never;
+        Insert: { recipe_id: string; user_id: string };
+        Update: Record<string, never>;
+        Relationships: [];
       };
       recipe_tags: {
         Row: { recipe_id: string; tag: string };
         Insert: { recipe_id: string; tag: string };
-        Update: never;
+        Update: Record<string, never>;
+        Relationships: [];
       };
       recipe_comments: {
         Row: { id: string; recipe_id: string; user_id: string; content: string; created_at: string };
-        Insert: Omit<Database["public"]["Tables"]["recipe_comments"]["Row"], "id" | "created_at">;
-        Update: never;
+        Insert: { recipe_id: string; user_id: string; content: string };
+        Update: Record<string, never>;
+        Relationships: [];
       };
       community_members: {
         Row: { community_id: string; user_id: string; joined_at: string };
-        Insert: Omit<Database["public"]["Tables"]["community_members"]["Row"], "joined_at">;
-        Update: never;
+        Insert: { community_id: string; user_id: string };
+        Update: Record<string, never>;
+        Relationships: [];
       };
       communities: {
         Row: {
@@ -110,13 +205,32 @@ export interface Database {
           members_count: number;
           created_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["communities"]["Row"], "id" | "created_at" | "members_count">;
-        Update: Partial<Database["public"]["Tables"]["communities"]["Insert"]>;
+        Insert: {
+          name: string;
+          slug: string;
+          description?: string | null;
+          category?: string | null;
+          cover_url?: string | null;
+          created_by?: string | null;
+          is_verified?: boolean;
+        };
+        Update: {
+          name?: string;
+          slug?: string;
+          description?: string | null;
+          category?: string | null;
+          cover_url?: string | null;
+          created_by?: string | null;
+          is_verified?: boolean;
+          members_count?: number;
+        };
+        Relationships: [];
       };
       meal_plans: {
         Row: { id: string; user_id: string; title: string; created_at: string };
-        Insert: Omit<Database["public"]["Tables"]["meal_plans"]["Row"], "id" | "created_at">;
-        Update: Partial<Database["public"]["Tables"]["meal_plans"]["Insert"]>;
+        Insert: { user_id: string; title?: string };
+        Update: { user_id?: string; title?: string };
+        Relationships: [];
       };
       meal_plan_items: {
         Row: {
@@ -130,43 +244,69 @@ export interface Database {
           is_checked: boolean;
           sort_order: number;
         };
-        Insert: Omit<Database["public"]["Tables"]["meal_plan_items"]["Row"], "id">;
-        Update: Partial<Database["public"]["Tables"]["meal_plan_items"]["Insert"]>;
+        Insert: {
+          meal_plan_id: string;
+          recipe_id?: string | null;
+          recipe_title?: string | null;
+          meal_type?: "Breakfast" | "Snack" | "Lunch" | "Dinner" | null;
+          planned_date?: string | null;
+          calories?: number | null;
+          is_checked?: boolean;
+          sort_order?: number;
+        };
+        Update: {
+          meal_plan_id?: string;
+          recipe_id?: string | null;
+          recipe_title?: string | null;
+          meal_type?: "Breakfast" | "Snack" | "Lunch" | "Dinner" | null;
+          planned_date?: string | null;
+          calories?: number | null;
+          is_checked?: boolean;
+          sort_order?: number;
+        };
+        Relationships: [];
       };
       pantry_items: {
         Row: { id: string; user_id: string; name: string; amount: string | null; unit: string | null; tag: string | null; created_at: string };
-        Insert: Omit<Database["public"]["Tables"]["pantry_items"]["Row"], "id" | "created_at">;
-        Update: Partial<Database["public"]["Tables"]["pantry_items"]["Insert"]>;
+        Insert: { user_id: string; name: string; amount?: string | null; unit?: string | null; tag?: string | null };
+        Update: { user_id?: string; name?: string; amount?: string | null; unit?: string | null; tag?: string | null };
+        Relationships: [];
       };
       shopping_list: {
         Row: { id: string; user_id: string; name: string; qty: string | null; tags: string[] | null; is_done: boolean; created_at: string };
-        Insert: Omit<Database["public"]["Tables"]["shopping_list"]["Row"], "id" | "created_at">;
-        Update: Partial<Database["public"]["Tables"]["shopping_list"]["Insert"]>;
+        Insert: { user_id: string; name: string; qty?: string | null; tags?: string[] | null; is_done?: boolean };
+        Update: { user_id?: string; name?: string; qty?: string | null; tags?: string[] | null; is_done?: boolean };
+        Relationships: [];
       };
       challenges: {
         Row: { id: string; title: string; description: string | null; reward: string | null; difficulty: string | null; total_spots: number | null; ends_at: string | null; is_exclusive: boolean; created_at: string };
-        Insert: Omit<Database["public"]["Tables"]["challenges"]["Row"], "id" | "created_at">;
-        Update: Partial<Database["public"]["Tables"]["challenges"]["Insert"]>;
+        Insert: { title: string; description?: string | null; reward?: string | null; difficulty?: string | null; total_spots?: number | null; ends_at?: string | null; is_exclusive?: boolean };
+        Update: { title?: string; description?: string | null; reward?: string | null; difficulty?: string | null; total_spots?: number | null; ends_at?: string | null; is_exclusive?: boolean };
+        Relationships: [];
       };
       challenge_participants: {
         Row: { challenge_id: string; user_id: string; progress: number; joined_at: string };
-        Insert: Omit<Database["public"]["Tables"]["challenge_participants"]["Row"], "joined_at">;
-        Update: Partial<Database["public"]["Tables"]["challenge_participants"]["Insert"]>;
+        Insert: { challenge_id: string; user_id: string; progress?: number };
+        Update: { challenge_id?: string; user_id?: string; progress?: number };
+        Relationships: [];
       };
       follows: {
         Row: { follower_id: string; following_id: string; created_at: string };
-        Insert: Omit<Database["public"]["Tables"]["follows"]["Row"], "created_at">;
-        Update: never;
+        Insert: { follower_id: string; following_id: string };
+        Update: Record<string, never>;
+        Relationships: [];
       };
       collections: {
         Row: { id: string; user_id: string; title: string; description: string | null; cover_url: string | null; is_public: boolean; created_at: string };
-        Insert: Omit<Database["public"]["Tables"]["collections"]["Row"], "id" | "created_at">;
-        Update: Partial<Database["public"]["Tables"]["collections"]["Insert"]>;
+        Insert: { user_id: string; title: string; description?: string | null; cover_url?: string | null; is_public?: boolean };
+        Update: { user_id?: string; title?: string; description?: string | null; cover_url?: string | null; is_public?: boolean };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
 

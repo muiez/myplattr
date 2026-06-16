@@ -187,8 +187,8 @@ export default async function RecipePage({ params }: { params: Promise<{ slug: s
           recipeId={recipe.id}
           userId={user?.id ?? null}
           userAvatar={user ? null : null}
-          initialComments={(comments ?? []).map((c) => {
-            const p = Array.isArray(c.profiles) ? c.profiles[0] : c.profiles;
+          initialComments={((comments ?? []) as unknown as Array<{ id: string; content: string; created_at: string; profiles: { full_name: string | null; username: string | null; avatar_url: string | null } | null }>).map((c) => {
+            const p = c.profiles;
             return {
               id: c.id,
               content: c.content,
