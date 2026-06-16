@@ -3,19 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
-  Home,
-  Compass,
-  Users,
-  Trophy,
-  Calendar,
-  User,
-  Settings,
-  LogOut,
-  Bell,
-  ChevronLeft,
-  ChevronRight,
-  LogIn,
+  Home, Compass, Users, Trophy, Calendar, User,
+  Settings, LogOut, Bell, LogIn, Sun, Moon, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
@@ -34,13 +25,16 @@ const nav = [
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
@@ -53,37 +47,27 @@ export default function Sidebar() {
     router.refresh();
   }
 
-  const displayName = user?.user_metadata?.full_name
-    ?? user?.user_metadata?.username
-    ?? user?.email?.split("@")[0]
-    ?? "Guest";
+  const displayName =
+    user?.user_metadata?.full_name ??
+    user?.user_metadata?.username ??
+    user?.email?.split("@")[0] ??
+    "Guest";
 
   const avatarUrl = user?.user_metadata?.avatar_url ?? null;
   const initials = displayName.slice(0, 2).toUpperCase();
-  const plan = user ? "Free Plan" : null;
+  const isDark = mounted && theme === "dark";
 
   return (
     <aside
       className={cn(
-        "relative shrink-0 flex flex-col h-full bg-white border-r border-gray-100 transition-all duration-300 ease-in-out",
-        collapsed ? "w-[64px]" : "w-[220px]"
+        "relative shrink-0 flex flex-col h-full bg-white dark:bg-[oklch(0.15_0.012_145)] border-r border-gray-100 dark:border-[oklch(0.25_0.012_145)] transition-all duration-300 ease-in-out",
+        collapsed ? "w-[60px]" : "w-[220px]"
       )}
     >
-      {/* Toggle button */}
-      <button
-        onClick={() => setCollapsed((c) => !c)}
-        className="absolute -right-3 top-[52px] z-10 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50 hover:shadow-md transition-all"
-        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        {collapsed
-          ? <ChevronRight size={13} className="text-gray-500" />
-          : <ChevronLeft size={13} className="text-gray-500" />}
-      </button>
-
-      {/* Logo */}
+      {/* Logo row */}
       <div className={cn(
-        "flex items-center border-b border-gray-100 h-[60px] shrink-0 transition-all duration-300",
-        collapsed ? "justify-center px-0" : "justify-between px-4"
+        "flex items-center border-b border-gray-100 dark:border-[oklch(0.25_0.012_145)] h-[60px] shrink-0",
+        collapsed ? "justify-center px-0 gap-0" : "justify-between px-4"
       )}>
         <div className={cn("flex items-center", collapsed ? "gap-0" : "gap-2.5")}>
           <div className="w-8 h-8 bg-[#4a7c3f] rounded-lg flex items-center justify-center shrink-0">
@@ -94,13 +78,13 @@ export default function Sidebar() {
             </svg>
           </div>
           {!collapsed && (
-            <span className="font-bold text-[15px] tracking-tight text-gray-900 whitespace-nowrap">
+            <span className="font-bold text-[15px] tracking-tight text-gray-900 dark:text-gray-100 whitespace-nowrap">
               MyPlattr
             </span>
           )}
         </div>
         {!collapsed && (
-          <button className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-50">
+          <button className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors p-1 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5">
             <Bell size={17} />
           </button>
         )}
@@ -120,29 +104,57 @@ export default function Sidebar() {
                 collapsed ? "justify-center px-0 py-2.5" : "gap-3 px-3 py-2.5",
                 active
                   ? "bg-[#3d6b32] text-white shadow-sm"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-100"
               )}
             >
-              <Icon
-                size={18}
-                strokeWidth={active ? 2.2 : 1.8}
-                className={cn("shrink-0", active ? "text-white" : "text-gray-500")}
-              />
+              <Icon size={18} strokeWidth={active ? 2.2 : 1.8} className={cn("shrink-0", active ? "text-white" : "")} />
               {!collapsed && <span className="whitespace-nowrap overflow-hidden">{label}</span>}
             </Link>
           );
         })}
       </nav>
 
-      {/* Bottom */}
+      {/* Bottom actions */}
       <div className={cn(
-        "pb-4 pt-3 border-t border-gray-100 space-y-0.5",
+        "pb-4 pt-3 border-t border-gray-100 dark:border-[oklch(0.25_0.012_145)] space-y-0.5",
         collapsed ? "px-2" : "px-3"
       )}>
+        {/* Collapse toggle — subtle, inside sidebar */}
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={cn(
+            "flex items-center rounded-lg text-sm font-medium text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-700 dark:hover:text-gray-300 transition-colors w-full py-2",
+            collapsed ? "justify-center px-0" : "gap-3 px-3"
+          )}
+        >
+          {collapsed
+            ? <PanelLeftOpen size={16} strokeWidth={1.8} className="shrink-0" />
+            : <PanelLeftClose size={16} strokeWidth={1.8} className="shrink-0" />}
+          {!collapsed && <span className="whitespace-nowrap text-xs">Collapse</span>}
+        </button>
+
+        {/* Dark mode toggle */}
+        {mounted && (
+          <button
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            className={cn(
+              "flex items-center rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors w-full py-2.5",
+              collapsed ? "justify-center px-0" : "gap-3 px-3"
+            )}
+          >
+            {isDark
+              ? <Sun size={17} strokeWidth={1.8} className="shrink-0" />
+              : <Moon size={17} strokeWidth={1.8} className="shrink-0" />}
+            {!collapsed && <span className="whitespace-nowrap">{isDark ? "Light mode" : "Dark mode"}</span>}
+          </button>
+        )}
+
         <button
           title={collapsed ? "Settings" : undefined}
           className={cn(
-            "flex items-center rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors w-full py-2.5",
+            "flex items-center rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-800 dark:hover:text-gray-200 transition-colors w-full py-2.5",
             collapsed ? "justify-center px-0" : "gap-3 px-3"
           )}
         >
@@ -155,7 +167,7 @@ export default function Sidebar() {
             onClick={handleLogout}
             title={collapsed ? "Logout" : undefined}
             className={cn(
-              "flex items-center rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-red-600 transition-colors w-full py-2.5",
+              "flex items-center rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 hover:text-red-500 transition-colors w-full py-2.5",
               collapsed ? "justify-center px-0" : "gap-3 px-3"
             )}
           >
@@ -167,7 +179,7 @@ export default function Sidebar() {
             href="/login"
             title={collapsed ? "Sign in" : undefined}
             className={cn(
-              "flex items-center rounded-lg text-sm font-medium text-[#4a7c3f] hover:bg-[#e8f5e3] transition-colors w-full py-2.5",
+              "flex items-center rounded-lg text-sm font-medium text-[#4a7c3f] hover:bg-[#e8f5e3] dark:hover:bg-[#4a7c3f]/10 transition-colors w-full py-2.5",
               collapsed ? "justify-center px-0" : "gap-3 px-3"
             )}
           >
@@ -177,11 +189,11 @@ export default function Sidebar() {
         )}
 
         {/* User row */}
-        {user ? (
+        {user && (
           <div
             title={collapsed ? displayName : undefined}
             className={cn(
-              "flex items-center mt-1 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors py-2",
+              "flex items-center mt-1 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors py-2",
               collapsed ? "justify-center px-0" : "gap-2.5 px-2"
             )}
           >
@@ -191,15 +203,15 @@ export default function Sidebar() {
             </Avatar>
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-gray-800 truncate">{displayName}</p>
-                <p className="text-[10px] text-gray-400 truncate">{plan}</p>
+                <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">{displayName}</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">Free Plan</p>
               </div>
             )}
           </div>
-        ) : (
-          !collapsed && (
-            <p className="px-2 py-2 text-[10px] text-gray-400">Not signed in</p>
-          )
+        )}
+
+        {!user && !collapsed && (
+          <p className="px-2 py-2 text-[10px] text-gray-400 dark:text-gray-600">Not signed in</p>
         )}
       </div>
     </aside>
